@@ -1,114 +1,81 @@
-alert("bienvenido a mi verduleria");
-// declaro constantes para los precios
-const precioKiwi = 1500;
-const precioPera = 300;
-const precioBanana = 900;
 
+// declaro objeto para los precios
+const precios = {
+  kiwi: 1500,
+  banana: 900,
+  pera: 300
+};
+
+// variables principales
 let precioFinal = 0;
 let carrito = [];
 
-
-// funcion auxiliar de cantidades 
-function cantidad(fruta) {
-  let entrada = prompt("¿Cuántos kilos de " + fruta + "?");
+const form = document.getElementById("formCompra");
 
 
-  if (entrada === null) {
-    alert("Operación cancelada.");
-    return null;
-  }
-  entrada = entrada.replace(",", ".");
+//evento principal
 
-  let kilos = parseFloat(entrada);
+form.addEventListener("submit", function (e) {
+  e.preventDefault();
 
-  if (isNaN(kilos) || kilos <= 0) {
-    alert("Debe ingresar una cantidad válida mayo a 0");
-    return null;
+  const producto = document.getElementById("producto").value;
+  const kilos = parseFloat(document.getElementById("kilos").value);
+
+  if (producto === "" || isNaN(kilos) || kilos <= 0) {
+    
+    return;
+
   }
 
-  alert("usted lleva " + kilos + " kilos de " + fruta + ".");
-  return kilos;
-
-}
-
-// agrego funcion para acumular los totales
-function sumarAlTotal(producto, kilos) {
-  let subtotal = 0;
-
-  if (producto === "kiwi") subtotal = precioKiwi * kilos;
-  else if (producto === "banana") subtotal = precioBanana * kilos;
-  else if (producto === "pera") subtotal = precioPera * kilos;
+  agregarAlCarrito(producto, kilos);
+});
 
 
+//funcion agregar carrito
+
+function agregarAlCarrito(producto, kilos) {
+  const subtotal = precios[producto] * kilos;
+
+  carrito.push({ producto, kilos, subtotal });
   precioFinal += subtotal;
 
-
-  carrito.push({
-    producto: producto,
-    kilos: kilos,
-    subtotal: subtotal
-  });
-
-  alert(
-    "Subtotal por " +
-    kilos +
-    " kg de " +
-    producto +
-    ": $" +
-    subtotal +
-    "\nTotal acumulado: $" +
-    precioFinal
-  );
-
+  guardarCarrito();
+  renderCarrito();
 }
 
-//funcion principal
-function productoDeseado() {
-  let seguir = true;
+function renderCarrito() {
+  const lista = document.getElementById("listaCarrito");
+  const total = document.getElementById("total");
 
-  while (seguir) {
+  lista.innerHTML = "";
 
-    let producto = prompt("que producto desea? Tengo Kiwi, banana, pera").toLowerCase();
+  carrito.forEach(item => {
+    const li = document.createElement("li");
+    li.textContent = `${item.producto} - ${item.kilos} kg - $${item.subtotal}`;
+    lista.appendChild(li);
+  });
 
-    if (producto === "" || producto === null) {
-      alert("No ingresó nada. Intente otra vez.");
-      continue;
-    }
-    if (producto === "kiwi" || producto === "banana" || producto === "pera") {
+  total.textContent = `Total a pagar: $${precioFinal}`;
+}
 
-      let kilos = cantidad(producto);
+// punto obligatorio para guardar la informacion
 
-      if (kilos === null) {
-        continue;
-      }
+function guardarCarrito() {
+  localStorage.setItem("carrito", JSON.stringify(carrito));
+  localStorage.setItem("total", precioFinal);
+}
 
-      sumarAlTotal(producto, kilos);
+function cargarCarrito() {
+  const data = localStorage.getItem("carrito");
+  const totalGuardado = localStorage.getItem("total");
 
-
-      seguir = confirm("Desea comprar otra cosa?");
-
-    }
-    else {
-      alert("Producto inválido. Intente de nuevo.");
-
-    }
-
+  if (data) {
+    carrito = JSON.parse(data);
+    precioFinal = Number(totalGuardado);
+    renderCarrito();
   }
-  let resumen = "Gracias por su compra.\n\nDetalle:\n";
-  carrito.forEach((item, index) => {
-    resumen +=
-      (index + 1) +
-      ") " +
-      item.producto +
-      " — " +
-      item.kilos +
-      " kg — Subtotal: $" +
-      item.subtotal +
-      "\n";
-  });
-  resumen += "\nTOTAL A PAGAR: $" + precioFinal;
-  alert(resumen);
 }
 
+cargarCarrito();
 
-productoDeseado();
+
