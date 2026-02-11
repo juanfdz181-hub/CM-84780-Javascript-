@@ -1,81 +1,123 @@
-
-// declaro objeto para los precios
-const precios = {
-  kiwi: 1500,
-  banana: 900,
-  pera: 300
-};
-
-// variables principales
-let precioFinal = 0;
+let productos = [];
 let carrito = [];
 
-const form = document.getElementById("formCompra");
+// Cargo productos desde JSON 
+fetch("productos.json")
+  .then(response => response.json())
+  .then(data => {
+    productos = data;
+    cargarProductos();
+  });
 
 
-//evento principal
+function cargarProductos() {
+  const select = document.getElementById("producto");
 
-form.addEventListener("submit", function (e) {
+  select.innerHTML = `<option value="">Seleccione</option>`;
+
+  productos.forEach(prod => {
+    const option = document.createElement("option");
+    option.value = prod.nombre;
+    option.textContent = `${prod.nombre} - $${prod.precio}`;
+    select.appendChild(option);
+  });
+}
+
+//  formulario
+document.getElementById("formCompra").addEventListener("submit", e => {
   e.preventDefault();
 
-  const producto = document.getElementById("producto").value;
+  const productoNombre = document.getElementById("producto").value;
   const kilos = parseFloat(document.getElementById("kilos").value);
 
-  if (producto === "" || isNaN(kilos) || kilos <= 0) {
-    
+  if (productoNombre === "" || isNaN(kilos) || kilos <= 0) {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Debe seleccionar producto y cantidad válida"
+    });
     return;
-
   }
 
-  agregarAlCarrito(producto, kilos);
+  const producto = productos.find(p => p.nombre === productoNombre);
+
+  const subtotal = producto.precio * kilos;
+
+  carrito.push({
+    id: Date.now(),
+    producto: producto.nombre,
+    kilos,
+    subtotal
+  });
+
+  guardarCarrito();
+  renderCarrito();
+
+  Swal.fire({
+    icon: "success",
+    title: "Producto agregado"
+  });
 });
 
 
-//funcion agregar carrito
+function renderCarrito() {
+  const lista = document.getElementById("listaCarrito");
+  const totalElemento = document.getElementById("total");
 
-function agregarAlCarrito(producto, kilos) {
-  const subtotal = precios[producto] * kilos;
+  lista.innerHTML = "";
 
-  carrito.push({ producto, kilos, subtotal });
-  precioFinal += subtotal;
+  let total = 0;
 
+  carrito.forEach(item => {
+    total += item.subtotal;
+
+    const li = document.createElement("li");
+
+    li.innerHTML = `
+      ${item.producto} - ${item.kilos}kg - $${item.subtotal}
+      <button onclick="eliminarProducto(${item.id})">X</button>
+    `;
+
+    lista.appendChild(li);
+  });
+
+  totalElemento.textContent = `Total: $${total}`;
+}
+
+function eliminarProducto(id) {
+  carrito = carrito.filter(item => item.id !== id);
   guardarCarrito();
   renderCarrito();
 }
 
-function renderCarrito() {
-  const lista = document.getElementById("listaCarrito");
-  const total = document.getElementById("total");
-
-  lista.innerHTML = "";
-
-  carrito.forEach(item => {
-    const li = document.createElement("li");
-    li.textContent = `${item.producto} - ${item.kilos} kg - $${item.subtotal}`;
-    lista.appendChild(li);
+document.getElementById("vaciarCarrito").addEventListener("click", () => {
+  Swal.fire({
+    title: "¿Vaciar carrito?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí"
+  }).then(result => {
+    if (result.isConfirmed) {
+      carrito = [];
+      guardarCarrito();
+      renderCarrito();
+    }
   });
-
-  total.textContent = `Total a pagar: $${precioFinal}`;
-}
-
-// punto obligatorio para guardar la informacion
+});
 
 function guardarCarrito() {
   localStorage.setItem("carrito", JSON.stringify(carrito));
-  localStorage.setItem("total", precioFinal);
 }
 
 function cargarCarrito() {
   const data = localStorage.getItem("carrito");
-  const totalGuardado = localStorage.getItem("total");
-
   if (data) {
     carrito = JSON.parse(data);
-    precioFinal = Number(totalGuardado);
     renderCarrito();
   }
 }
 
 cargarCarrito();
+
 
 
